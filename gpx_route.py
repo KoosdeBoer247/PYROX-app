@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 GPX route parsing and race-day exposure mapping
 =================================================
@@ -395,4 +394,5 @@ def render_race_profile(st, route_df: pd.DataFrame, waypoints: list, weather_df:
             & (weather_df.index <= finish_time + pd.Timedelta(hours=1))
         ]
     render_hourly_safety_panel(st, race_weather, f"{profile_label} (race window only)", effective_met)
+
 
