@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Decision-support layer for the PYROX/Thermopoulos app
 ======================================================
@@ -394,3 +393,4 @@ def render_hourly_safety_panel(st, df: pd.DataFrame, group_label: str, met: floa
     # Per-day plain-language summary
     for day in sorted(schedule["time"].dt.date.unique()):
         st.markdown(f"**{pd.Timestamp(day).strftime('%A %d %b')}:** " + summarize_day(schedule, day))
+
