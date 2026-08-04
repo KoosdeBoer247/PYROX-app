@@ -148,13 +148,32 @@ def pace_schedule(route_df: pd.DataFrame, start_time: pd.Timestamp, pace_min_per
     return out
 
 
+def _to_epoch_seconds(dt_index_or_series, reference: pd.Timestamp) -> np.ndarray:
+    """Seconds relative to a shared reference timestamp.
+
+    Deliberately NOT `.astype("int64")`: pandas may store datetimes at
+    nanosecond OR microsecond resolution depending on version and how the
+    object was constructed, and the two differ by a factor of 1000. Mixing
+    them silently pushes every query outside the interpolation range, so
+    np.interp clamps to an endpoint and every point gets the same value --
+    a flat line that looks like real (constant) weather rather than a bug.
+    Subtracting a common reference and taking total_seconds() is
+    resolution-independent.
+    """
+    delta = dt_index_or_series - reference
+    if isinstance(delta, pd.Series):
+        return delta.dt.total_seconds().to_numpy()
+    return delta.total_seconds().to_numpy()
+
+
 def interpolate_weather_along_route(route_df_timed: pd.DataFrame, weather_df: pd.DataFrame,
                                      columns=("T_air_urban", "WBGT", "UTCI", "MRT")) -> pd.DataFrame:
     """Linearly interpolate the hourly weather series onto each point's
     clock_time."""
     out = route_df_timed.copy()
-    idx_numeric = weather_df.index.astype("int64").to_numpy()
-    query_numeric = out["clock_time"].astype("int64").to_numpy()
+    reference = weather_df.index[0]
+    idx_numeric = _to_epoch_seconds(weather_df.index, reference)
+    query_numeric = _to_epoch_seconds(out["clock_time"], reference)
     for col in columns:
         if col in weather_df.columns:
             out[col] = np.interp(query_numeric, idx_numeric, weather_df[col].to_numpy())
@@ -376,3 +395,4 @@ def render_race_profile(st, route_df: pd.DataFrame, waypoints: list, weather_df:
             & (weather_df.index <= finish_time + pd.Timedelta(hours=1))
         ]
     render_hourly_safety_panel(st, race_weather, f"{profile_label} (race window only)", effective_met)
+
